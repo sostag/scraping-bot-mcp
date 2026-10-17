@@ -1,6 +1,6 @@
 {
   "name": "scraping-bot-mcp",
-  "version": "0.0.0-dev",
+  "version": "1.0.1",
   "description": "MCP server for ScrapingBot: let Claude, Cursor and other AI agents scrape web pages, products, real estate, travel, search engines and social media.",
   "type": "module",
   "bin": {
