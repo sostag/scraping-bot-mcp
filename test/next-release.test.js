@@ -9,6 +9,9 @@ test("reads Conventional Commits", () => {
   assert.equal(parseCommit("fix!: rename a tool").breaking, true);
   assert.equal(parseCommit("refactor: x", "BREAKING CHANGE: removed y").breaking, true);
   assert.equal(parseCommit("Update README").type, "other");
+  // Mentioning the rule in a message is not a breaking change.
+  assert.equal(parseCommit("ci: releases", 'feat -> minor, "!" or BREAKING CHANGE -> major.').breaking, false);
+  assert.equal(parseCommit("refactor: x", "Explanation.\n\nBREAKING-CHANGE: removed y").breaking, true);
 });
 
 test("chooses the version bump", () => {

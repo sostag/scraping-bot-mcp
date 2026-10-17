@@ -1,5 +1,5 @@
 // Computes the next release from the commits pushed since the last vX.Y.Z tag
-// (Conventional Commits): "feat" -> minor, "!" or "BREAKING CHANGE" -> major,
+// (Conventional Commits): "feat" -> minor, "!" or a "BREAKING CHANGE:" footer -> major,
 // anything else -> patch. Used by .github/workflows/release.yml:
 //
 //   node scripts/next-release.mjs <notes-file>
@@ -14,7 +14,8 @@ export function parseCommit(subject, body = "") {
   const match = subject.match(/^(\w+)(?:\([^)]*\))?(!)?:\s*(.+)$/);
   return {
     type: match ? match[1].toLowerCase() : "other",
-    breaking: Boolean(match?.[2]) || /BREAKING[ -]CHANGE/.test(body),
+    // A footer line starting with "BREAKING CHANGE:", not the words anywhere.
+    breaking: Boolean(match?.[2]) || /^BREAKING[ -]CHANGE:/m.test(body),
     description: match ? match[3] : subject,
   };
 }
