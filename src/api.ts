@@ -1,7 +1,7 @@
 // Thin client for the ScrapingBot API (https://www.scraping-bot.io/documentation).
 
 export const DEFAULT_API_BASE = "https://api.scraping-bot.io";
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.1";
 
 // The API gateway closes requests after 60 s; stop waiting a little later.
 const REQUEST_TIMEOUT_MS = 90_000;

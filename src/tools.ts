@@ -87,7 +87,7 @@ const STRUCTURED_TOOLS = [
 
 // Social Media scrapers and the inputs they take.
 const SOCIAL_SCRAPERS = {
-  instagramProfile: "account (name or profile URL); posts_number",
+  instagramProfile: "account (name or profile URL); returns the 12 latest posts",
   instagramPost: "url",
   tiktokProfile: "url",
   tiktokHashtag: "hashtag; max_video_count",
@@ -102,7 +102,7 @@ const SOCIAL_SCRAPERS = {
   linkedinSearchResult: "keywords; page, language",
   twitterProfile: "url; number_of_tweets",
   twitterSearch: "search; posts_max_count",
-  threadsProfile: "url; posts_number",
+  threadsProfile: "url",
   threadsPost: "url",
 } as const;
 
@@ -250,7 +250,6 @@ export function registerTools(
         country: z.string().optional(),
         language: z.string().optional(),
         page: z.string().optional(),
-        posts_number: z.number().int().positive().optional(),
         number_of_tweets: z.number().int().positive().optional(),
         max_video_count: z.number().int().positive().optional(),
         load_more_items_count: z.number().int().positive().optional(),
