@@ -1,0 +1,46 @@
+{
+  "name": "scraping-bot-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for ScrapingBot: let Claude, Cursor and other AI agents scrape web pages, products, real estate, travel, search engines and social media.",
+  "type": "module",
+  "bin": {
+    "scraping-bot-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "npm run build && node --test test/*.test.js",
+    "test:live": "npm run build && node test/live.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "scraping",
+    "web-scraping",
+    "claude",
+    "ai-agents"
+  ],
+  "homepage": "https://www.scraping-bot.io/mcp-server",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sostag/scraping-bot-mcp.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
