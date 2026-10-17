@@ -1,7 +1,10 @@
 // Thin client for the ScrapingBot API (https://www.scraping-bot.io/documentation).
+import { createRequire } from "node:module";
 
 export const DEFAULT_API_BASE = "https://api.scraping-bot.io";
-export const VERSION = "1.0.1";
+// Single source: package.json. Releases (vX.Y.Z tags) set it; main keeps a
+// development value (see .github/workflows/release.yml).
+export const VERSION: string = createRequire(import.meta.url)("../package.json").version;
 
 // The API gateway closes requests after 60 s; stop waiting a little later.
 const REQUEST_TIMEOUT_MS = 90_000;

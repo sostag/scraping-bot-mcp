@@ -40,7 +40,7 @@ Add the server to `claude_desktop_config.json` (macOS: `~/Library/Application Su
 
 Use the same `command`, `args` and `env` in the client's MCP settings (Cursor: `~/.cursor/mcp.json`).
 
-To pin a version, add the tag to the repository: `github:sostag/scraping-bot-mcp#v1.0.0`.
+To pin a version, add its tag: `github:sostag/scraping-bot-mcp#v1.0.1`. The versions are listed in the [releases](https://github.com/sostag/scraping-bot-mcp/releases).
 
 ## Tools
 
@@ -73,7 +73,9 @@ npm test                 # builds, then tests every tool against a fake API (no 
 SCRAPING_BOT_USERNAME=... SCRAPING_BOT_API_KEY=... npm run test:live   # real API, about 65 credits
 ```
 
-`src/` is TypeScript, compiled to `dist/` (not committed): `npx github:...` builds it on install through the `prepare` script. `SCRAPING_BOT_API_URL` points the server to another API (local development).
+`src/` is TypeScript, compiled to `dist/` (not committed): `npx github:...` builds it on install through the `prepare` script.
+
+Releases are automatic: every push to `main` that changes the code builds, tests and publishes a `vX.Y.Z` tag with a GitHub release (`.github/workflows/release.yml`). The commit messages choose the version: `feat:` raises the minor version, `fix:` and the others the patch version, `!` or `BREAKING CHANGE` the major version. Nothing is committed to `main` (its `package.json` keeps `0.0.0-dev`), so there is nothing to pull. Add `[skip release]` to a commit message to push without releasing. `SCRAPING_BOT_API_URL` points the server to another API (local development).
 
 ## License
 
