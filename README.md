@@ -57,6 +57,8 @@ To pin a version, add its tag: `github:sostag/scraping-bot-mcp#v1.0.1`. The vers
 
 Page tools take `url` plus the optional `useChrome` (JavaScript sites), `premiumProxy` (sites that block regular proxies) and `proxyCountry` (two-letter code, with `premiumProxy`). Some sites always get the right options from the API.
 
+A request blocked by the site (403, captcha…) is retried once with a premium proxy, billed at the premium price only if it succeeds; the result then says so (`notice`, or a note above the HTML). Pass `premiumFallback: false` to turn this off.
+
 Failed requests are refunded. Social media scrapes take from a few seconds to several minutes: `scrape_social_media` waits about a minute, then returns a `responseId` that `get_social_media_result` uses later, at no cost.
 
 When a URL is malformed (missing `https://`, missing `/` after the domain…), the error explains it and gives the corrected address.

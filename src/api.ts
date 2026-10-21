@@ -15,6 +15,9 @@ export interface ApiResult {
   // Parsed JSON when the response is JSON, otherwise the raw text (HTML).
   body: unknown;
   text: string;
+  // Raw HTML retried with a premium proxy: the API says so in a header (the
+  // body is the page); JSON responses carry it in their "notice" field.
+  notice?: string;
 }
 
 export interface ApiClient {
@@ -53,7 +56,8 @@ export function createClient({
         // keep the raw text
       }
     }
-    return { ok: response.ok, status: response.status, body, text };
+    const notice = response.headers.get("x-scrapingbot-notice") ?? undefined;
+    return { ok: response.ok, status: response.status, body, text, ...(notice && { notice }) };
   }
 
   return {

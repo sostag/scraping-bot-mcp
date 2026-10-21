@@ -12,7 +12,7 @@ const DEFAULT_SOCIAL_WAIT_MS = 50_000;
 const SOCIAL_POLL_INTERVAL_MS = 5_000;
 
 const COST_NOTE =
-  "Costs 1 credit, 5 with useChrome, 10 with premiumProxy, 25 with both (and for Google pages); failed requests are refunded.";
+  "Costs 1 credit, 5 with useChrome, 10 with premiumProxy, 25 with both (and for Google pages); failed requests are refunded. A request blocked by the site is retried once with a premium proxy, billed at the premium price only if it succeeds (the result then says so).";
 
 function text(value: string, isError = false): ToolResult {
   return { content: [{ type: "text", text: value }], ...(isError ? { isError: true } : {}) };
@@ -42,15 +42,28 @@ const pageOptions = {
     .length(2)
     .optional()
     .describe("Two-letter country code of the proxy (requires premiumProxy), e.g. FR, US."),
+  premiumFallback: z
+    .boolean()
+    .optional()
+    .describe(
+      "When the site blocks the request, retry it once with a premium proxy, billed at the premium price only if it succeeds. Default true; false turns it off.",
+    ),
 };
 
-type PageArgs = { url: string; useChrome?: boolean; premiumProxy?: boolean; proxyCountry?: string };
+type PageArgs = {
+  url: string;
+  useChrome?: boolean;
+  premiumProxy?: boolean;
+  proxyCountry?: string;
+  premiumFallback?: boolean;
+};
 
-function scrapeOptions({ useChrome, premiumProxy, proxyCountry }: PageArgs) {
+function scrapeOptions({ useChrome, premiumProxy, proxyCountry, premiumFallback }: PageArgs) {
   return {
     ...(useChrome !== undefined && { useChrome }),
     ...(premiumProxy !== undefined && { premiumProxy }),
     ...(proxyCountry && { proxyCountry: proxyCountry.toUpperCase() }),
+    ...(premiumFallback !== undefined && { premiumFallback }),
   };
 }
 
@@ -152,11 +165,12 @@ export function registerTools(
       if (error) return text(`ScrapingBot error: ${error}`, true);
       const html = result.text;
       const max = args.maxChars ?? DEFAULT_MAX_HTML_CHARS;
-      return text(
+      const page =
         html.length > max
           ? `${html.slice(0, max)}\n\n[Truncated: ${html.length} characters in total. Raise maxChars to get more.]`
-          : html,
-      );
+          : html;
+      // Retried with a premium proxy: the agent learns the price and how to skip the first attempt
+      return text(result.notice ? `[Note: ${result.notice}]\n\n${page}` : page);
     },
   );
 

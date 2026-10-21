@@ -121,3 +121,20 @@ test("a social media error is reported", async () => {
   assert.equal(result.isError, true);
   assert.match(result.text, /valid url/);
 });
+
+test("premiumFallback is sent, and a premium retry is shown to the agent", async () => {
+  const notice = "This website blocks standard proxies: the request was retried with a premium proxy and billed 10 credits. Add premiumProxy: true to your options to skip the first attempt.";
+  const { call, calls } = await connect({
+    "POST /scrape/retail": () => reply(200, { error: null, data: { title: "Jacket", price: 790 }, premiumProxyUsed: true, notice }),
+    "POST /scrape/raw-html": () =>
+      new Response("<html>page</html>", { status: 200, headers: { "content-type": "text/html", "x-scrapingbot-notice": notice, "x-premium-proxy-used": "true" } }),
+  });
+  const retail = await call("scrape_retail", { url: "https://shop.test/p/1", premiumFallback: false });
+  assert.deepEqual(calls[0].body.options, { premiumFallback: false });
+  assert.match(retail.text, /"premiumProxyUsed": true/);
+  assert.match(retail.text, /billed 10 credits/);
+  const raw = await call("scrape_raw_html", { url: "https://site.test" });
+  assert.equal(raw.isError, false);
+  assert.match(raw.text, /^\[Note: This website blocks standard proxies/);
+  assert.match(raw.text, /<html>page<\/html>$/);
+});
