@@ -54,6 +54,8 @@ To pin a version, add its tag: `github:sostag/scraping-bot-mcp#v1.0.1`. The vers
 | `scrape_search_engine` | Google or Bing results as JSON | 30 |
 | `scrape_social_media` | Public Instagram, TikTok, Facebook, LinkedIn, X/Twitter and Threads profiles, posts and searches | 30 |
 | `get_social_media_result` | The result of a social media scrape that was still pending | 0 |
+| `get_account` | Your plan, credits used and remaining, when they reset | 0 |
+| `get_usage_history` | Credits spent per day, requests per API, success rate and latest requests (up to 90 days) | 0 |
 
 Page tools take `url` plus the optional `useChrome` (JavaScript sites), `premiumProxy` (sites that block regular proxies) and `proxyCountry` (two-letter code, with `premiumProxy`). Some sites always get the right options from the API.
 
