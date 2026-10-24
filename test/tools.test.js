@@ -5,7 +5,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createClient } from "../dist/api.js";
-import { registerTools } from "../dist/tools.js";
+import { registerTools, SERVER_INSTRUCTIONS } from "../dist/tools.js";
 
 function reply(status, body, contentType = "application/json") {
   return new Response(typeof body === "string" ? body : JSON.stringify(body), { status, headers: { "content-type": contentType } });
@@ -169,4 +169,20 @@ test("a wrong API key is reported", async () => {
   const result = await call("get_account", {});
   assert.equal(result.isError, true);
   assert.match(result.text, /Wrong username or API key/);
+});
+
+test("the server instructions steer the agent to the right tool and costs", async () => {
+  const server = new McpServer({ name: "test", version: "0" }, { instructions: SERVER_INSTRUCTIONS });
+  registerTools(server, createClient({ username: "u", apiKey: "k", baseUrl: "https://api.test", fetchImpl: async () => reply(200, {}) }));
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  const client = new Client({ name: "test", version: "0" });
+  await client.connect(clientTransport);
+  const instructions = client.getInstructions();
+  assert.match(instructions, /Product page of an online shop: scrape_retail/);
+  assert.match(instructions, /scrape_social_media, never scrape_raw_html/);
+  assert.match(instructions, /https:\/\/www\.scraping-bot\.io\/pricing/);
+  // every tool it names exists
+  const names = new Set((await client.listTools()).tools.map((t) => t.name));
+  for (const name of instructions.match(/\b(?:scrape|get)_[a-z_]+/g)) assert.ok(names.has(name), `${name} is a tool`);
 });

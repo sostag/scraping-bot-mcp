@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createClient, DEFAULT_API_BASE, VERSION } from "./api.js";
-import { registerTools } from "./tools.js";
+import { registerTools, SERVER_INSTRUCTIONS } from "./tools.js";
 
 const username = process.env.SCRAPING_BOT_USERNAME;
 const apiKey = process.env.SCRAPING_BOT_API_KEY;
@@ -15,7 +15,7 @@ if (!username || !apiKey) {
   process.exit(1);
 }
 
-const server = new McpServer({ name: "scraping-bot", version: VERSION });
+const server = new McpServer({ name: "scraping-bot", version: VERSION }, { instructions: SERVER_INSTRUCTIONS });
 registerTools(
   server,
   createClient({ username, apiKey, baseUrl: process.env.SCRAPING_BOT_API_URL || DEFAULT_API_BASE }),
