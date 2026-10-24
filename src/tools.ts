@@ -122,6 +122,15 @@ const SOCIAL_SCRAPERS = {
 type SocialScraper = keyof typeof SOCIAL_SCRAPERS;
 const socialScraperNames = Object.keys(SOCIAL_SCRAPERS) as [SocialScraper, ...SocialScraper[]];
 
+// Account routes are newer than the scraping API: say so instead of a bare 404.
+function accountResult(result: ApiResult): ToolResult {
+  const apiError = (result.body as { error?: unknown } | null)?.error;
+  if (result.status === 404 && !apiError) {
+    return text("ScrapingBot error: this API does not provide the account details yet. See https://www.scraping-bot.io/dashboard", true);
+  }
+  return toolResult(result);
+}
+
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 202 { status: "pending" }, or the error answered to a check made too soon.
@@ -282,6 +291,47 @@ export function registerTools(
       }
       return pollSocial(scraper, responseId, socialWaitMs);
     },
+  );
+
+  server.registerTool(
+    "get_account",
+    {
+      title: "Get my ScrapingBot credits",
+      description:
+        "Get the ScrapingBot account of the API key: plan, credits used and remaining this period, when they reset, and the upgrade page. " +
+        "Check it before a series of scrapes, and tell the user when few credits are left (under about 10%) or when a scrape fails for lack of credits (HTTP 402). Costs no credit.",
+      inputSchema: {},
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async () => accountResult(await client.get("/account", {})),
+  );
+
+  server.registerTool(
+    "get_usage_history",
+    {
+      title: "Get my ScrapingBot usage history",
+      description:
+        "Get the usage of the ScrapingBot account over the last days: credits spent per day, requests per API, success rate, and the latest requests (URL, API, success, credits, error). " +
+        "Useful to explain what used the credits or why requests fail. Costs no credit.",
+      inputSchema: {
+        days: z.number().int().min(1).max(90).optional().describe("Period in days, 1 to 90. Default 30."),
+        recent: z
+          .number()
+          .int()
+          .min(0)
+          .max(50)
+          .optional()
+          .describe("Number of latest requests to list, 0 to 50. Default 10."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ days, recent }) =>
+      accountResult(
+        await client.get("/account/usage", {
+          ...(days !== undefined && { days: String(days) }),
+          ...(recent !== undefined && { recent: String(recent) }),
+        }),
+      ),
   );
 
   server.registerTool(

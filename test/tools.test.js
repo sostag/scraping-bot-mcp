@@ -40,7 +40,7 @@ test("lists the tools", async () => {
   const { client } = await connect({});
   const { tools } = await client.listTools();
   assert.deepEqual(tools.map((t) => t.name).sort(), [
-    "get_social_media_result", "scrape_booking", "scrape_grocery", "scrape_raw_html", "scrape_real_estate",
+    "get_account", "get_social_media_result", "get_usage_history", "scrape_booking", "scrape_grocery", "scrape_raw_html", "scrape_real_estate",
     "scrape_retail", "scrape_search_engine", "scrape_social_media",
   ]);
 });
@@ -137,4 +137,36 @@ test("premiumFallback is sent, and a premium retry is shown to the agent", async
   assert.equal(raw.isError, false);
   assert.match(raw.text, /^\[Note: This website blocks standard proxies/);
   assert.match(raw.text, /<html>page<\/html>$/);
+});
+
+test("get_account reads the account with Basic Auth", async () => {
+  const account = { username: "user", plan: "Freelancer", credits: { limit: 100000, used: 99960, remaining: 40, resetsAt: null }, upgradeUrl: "https://www.scraping-bot.io/pricing" };
+  const { call, calls } = await connect({ "GET /account": () => reply(200, account) });
+  const result = await call("get_account", {});
+  assert.equal(result.isError, false);
+  assert.equal(JSON.parse(result.text).credits.remaining, 40);
+  assert.equal(calls[0].headers.Authorization, "Basic " + Buffer.from("user:key").toString("base64"));
+});
+
+test("get_usage_history sends the period and the number of requests", async () => {
+  const { call, calls } = await connect({ "GET /account/usage": () => reply(200, { days: 7, totalCredits: 41, recentRequests: [] }) });
+  const result = await call("get_usage_history", { days: 7, recent: 0 });
+  assert.equal(result.isError, false);
+  assert.deepEqual(calls[0].body, { days: "7", recent: "0" });
+  await call("get_usage_history", {});
+  assert.deepEqual(calls[1].body, {});
+});
+
+test("account tools explain an API without the account routes", async () => {
+  const { call } = await connect({});
+  const result = await call("get_account", {});
+  assert.equal(result.isError, true);
+  assert.match(result.text, /does not provide the account details yet/);
+});
+
+test("a wrong API key is reported", async () => {
+  const { call } = await connect({ "GET /account": () => reply(401, { error: "Wrong username or API key." }) });
+  const result = await call("get_account", {});
+  assert.equal(result.isError, true);
+  assert.match(result.text, /Wrong username or API key/);
 });
