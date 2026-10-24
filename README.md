@@ -79,7 +79,7 @@ SCRAPING_BOT_USERNAME=... SCRAPING_BOT_API_KEY=... npm run test:live   # real AP
 
 `src/` is TypeScript, compiled to `dist/` (not committed): the npm package ships it, and `npx github:...` builds it on install through the `prepare` script.
 
-Releases are automatic: every push to `main` that changes the code builds, tests and publishes a `vX.Y.Z` tag, a GitHub release and the npm package (`.github/workflows/release.yml`, with the `NPM_TOKEN` secret). The commit messages choose the version: `feat:` raises the minor version, `fix:` and the others the patch version, `!` or `BREAKING CHANGE` the major version. Nothing is committed to `main` (its `package.json` keeps `0.0.0-dev`), so there is nothing to pull. Add `[skip release]` to a commit message to push without releasing. `SCRAPING_BOT_API_URL` points the server to another API (local development).
+Releases are automatic: every push to `main` that changes the code builds, tests and publishes the npm package, a `vX.Y.Z` tag and a GitHub release (`.github/workflows/release.yml`; npm Trusted Publishing, no npm token). The commit messages choose the version: `feat:` raises the minor version, `fix:` and the others the patch version, `!` or `BREAKING CHANGE` the major version. Nothing is committed to `main` (its `package.json` keeps `0.0.0-dev`), so there is nothing to pull. Add `[skip release]` to a commit message to push without releasing. `SCRAPING_BOT_API_URL` points the server to another API (local development).
 
 ## License
 

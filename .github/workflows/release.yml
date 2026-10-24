@@ -19,7 +19,7 @@ on:
 
 permissions:
   contents: write
-  # npm provenance: the package is linked to the commit and workflow that built it
+  # npm Trusted Publishing and provenance: npm trusts this workflow's OIDC token
   id-token: write
 
 concurrency:
@@ -30,9 +30,6 @@ jobs:
   release:
     if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
-    env:
-      # a step's "if" cannot read secrets: say whether the npm token exists
-      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - name: Checkout with history and tags
         uses: actions/checkout@v4
@@ -55,7 +52,9 @@ jobs:
         id: next
         run: node scripts/next-release.mjs "$RUNNER_TEMP/release-notes.md" >> "$GITHUB_OUTPUT"
 
-      - name: Tag the version
+      # Tagged here, pushed only once npm has the version: a failed publish
+      # leaves no tag behind, so running the workflow again retries it.
+      - name: Set the version
         if: steps.next.outputs.version != ''
         env:
           VERSION: ${{ steps.next.outputs.version }}
@@ -65,7 +64,22 @@ jobs:
           npm version "$VERSION" --no-git-tag-version
           git commit --quiet -am "release: v$VERSION"
           git tag -a "v$VERSION" -m "v$VERSION"
-          git push origin "v$VERSION"
+
+      # Trusted Publishing (npm package settings: GitHub Actions,
+      # sostag/scraping-bot-mcp, release.yml): npm trusts this workflow
+      # through its OIDC token (id-token: write), no npm token is stored, and
+      # the provenance is added. Needs npm 11.5.1 or later.
+      - name: Publish to npm
+        if: steps.next.outputs.version != ''
+        run: |
+          npm install --global npm@^11.5.1
+          npm publish
+
+      - name: Push the tag
+        if: steps.next.outputs.version != ''
+        env:
+          VERSION: ${{ steps.next.outputs.version }}
+        run: git push origin "v$VERSION"
 
       - name: Create the GitHub release
         if: steps.next.outputs.version != ''
@@ -73,11 +87,3 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.next.outputs.version }}
         run: gh release create "v$VERSION" --title "v$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" --verify-tag
-
-      # package.json carries the version set by "Tag the version"; dist/ was
-      # built by npm test. Skipped until the NPM_TOKEN secret exists.
-      - name: Publish to npm
-        if: steps.next.outputs.version != '' && env.HAS_NPM_TOKEN == 'true'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --provenance
