@@ -1,0 +1,66 @@
+{
+  "manifest_version": "0.2",
+  "name": "scraping-bot",
+  "display_name": "ScrapingBot",
+  "version": "0.0.0-dev",
+  "description": "Scrape web pages, products, real estate, travel, search engines and social media with ScrapingBot.",
+  "long_description": "Lets Claude fetch public web pages through ScrapingBot's proxies and headless browsers, and extract structured data: product pages (price, stock, brand), real estate listings, hotels and rentals, Google and Bing results, and public Instagram, TikTok, Facebook, LinkedIn, X and Threads pages. Also shows your remaining credits and usage. You need a ScrapingBot account: the free plan gives 500 credits a month.",
+  "author": {
+    "name": "ScrapingBot",
+    "email": "support@scraping-bot.io",
+    "url": "https://www.scraping-bot.io"
+  },
+  "homepage": "https://www.scraping-bot.io/mcp-server",
+  "support": "https://www.scraping-bot.io/contact",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sostag/scraping-bot-mcp"
+  },
+  "license": "MIT",
+  "keywords": ["scraping", "web scraping", "products", "real estate", "search engine", "social media"],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {
+        "SCRAPING_BOT_USERNAME": "${user_config.username}",
+        "SCRAPING_BOT_API_KEY": "${user_config.api_key}"
+      }
+    }
+  },
+  "tools": [
+    { "name": "scrape_raw_html", "description": "HTML of any public web page" },
+    { "name": "scrape_retail", "description": "Product page: price, stock, brand, images, EAN" },
+    { "name": "scrape_real_estate", "description": "Property listing: price or rent, surface, rooms" },
+    { "name": "scrape_booking", "description": "Hotel, rental or travel search page" },
+    { "name": "scrape_grocery", "description": "Grocery product: price, brand, nutritional values" },
+    { "name": "scrape_search_engine", "description": "Google or Bing results" },
+    { "name": "scrape_social_media", "description": "Public Instagram, TikTok, Facebook, LinkedIn, X and Threads pages" },
+    { "name": "get_social_media_result", "description": "Result of a social media scrape still pending" },
+    { "name": "get_account", "description": "Plan and remaining credits" },
+    { "name": "get_usage_history", "description": "Credits spent per day, requests per API, latest requests" }
+  ],
+  "user_config": {
+    "username": {
+      "type": "string",
+      "title": "ScrapingBot username",
+      "description": "Your username, shown in your dashboard: https://www.scraping-bot.io/dashboard",
+      "required": true
+    },
+    "api_key": {
+      "type": "string",
+      "title": "ScrapingBot API key",
+      "description": "Your API key, from your dashboard. Stored securely by Claude Desktop.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

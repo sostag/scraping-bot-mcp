@@ -65,6 +65,12 @@ jobs:
           git commit --quiet -am "release: v$VERSION"
           git tag -a "v$VERSION" -m "v$VERSION"
 
+      # Claude Desktop extension, attached to the GitHub release (built before
+      # publishing, so that a failure leaves nothing published)
+      - name: Build the Claude Desktop extension
+        if: steps.next.outputs.version != ''
+        run: node scripts/build-mcpb.mjs "$RUNNER_TEMP/scraping-bot.mcpb"
+
       # Trusted Publishing (npm package settings: GitHub Actions,
       # sostag/scraping-bot-mcp, release.yml): npm trusts this workflow
       # through its OIDC token (id-token: write), no npm token is stored, and
@@ -86,4 +92,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.next.outputs.version }}
-        run: gh release create "v$VERSION" --title "v$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" --verify-tag
+        run: gh release create "v$VERSION" "$RUNNER_TEMP/scraping-bot.mcpb" --title "v$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" --verify-tag

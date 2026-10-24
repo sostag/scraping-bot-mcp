@@ -8,6 +8,10 @@ You need a ScrapingBot account: the free plan gives 500 credits a month. Your us
 
 The server runs with `npx` from npm ([`@sostag/scraping-bot-mcp`](https://www.npmjs.com/package/@sostag/scraping-bot-mcp)): nothing to install besides Node.js 18 or later.
 
+### Claude Desktop: one-click install
+
+Download [**scraping-bot.mcpb**](https://github.com/sostag/scraping-bot-mcp/releases/latest/download/scraping-bot.mcpb) and open it: Claude Desktop installs the extension and asks for your username and API key (stored securely). Nothing else to install.
+
 ### Claude Code
 
 ```bash
@@ -17,9 +21,9 @@ claude mcp add scraping-bot \
   -- npx -y @sostag/scraping-bot-mcp
 ```
 
-### Claude Desktop
+### Claude Desktop (manual configuration)
 
-Add the server to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/`, Windows: `%APPDATA%\Claude\`), then restart Claude Desktop:
+Or add the server to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/`, Windows: `%APPDATA%\Claude\`), then restart Claude Desktop:
 
 ```json
 {
@@ -79,7 +83,7 @@ SCRAPING_BOT_USERNAME=... SCRAPING_BOT_API_KEY=... npm run test:live   # real AP
 
 `src/` is TypeScript, compiled to `dist/` (not committed): the npm package ships it, and `npx github:...` builds it on install through the `prepare` script.
 
-Releases are automatic: every push to `main` that changes the code builds, tests and publishes the npm package, a `vX.Y.Z` tag and a GitHub release (`.github/workflows/release.yml`; npm Trusted Publishing, no npm token). The commit messages choose the version: `feat:` raises the minor version, `fix:` and the others the patch version, `!` or `BREAKING CHANGE` the major version. Nothing is committed to `main` (its `package.json` keeps `0.0.0-dev`), so there is nothing to pull. Add `[skip release]` to a commit message to push without releasing. `SCRAPING_BOT_API_URL` points the server to another API (local development).
+Releases are automatic: every push to `main` that changes the code builds, tests and publishes the npm package, a `vX.Y.Z` tag and a GitHub release with the Claude Desktop extension `scraping-bot.mcpb` (`.github/workflows/release.yml`; npm Trusted Publishing, no npm token). `manifest.json` describes the extension (its version comes from `package.json`); `node scripts/build-mcpb.mjs out.mcpb` builds it locally after `npm run build`. The commit messages choose the version: `feat:` raises the minor version, `fix:` and the others the patch version, `!` or `BREAKING CHANGE` the major version. Nothing is committed to `main` (its `package.json` keeps `0.0.0-dev`), so there is nothing to pull. Add `[skip release]` to a commit message to push without releasing. `SCRAPING_BOT_API_URL` points the server to another API (local development).
 
 ## License
 

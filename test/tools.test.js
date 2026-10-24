@@ -186,3 +186,16 @@ test("the server instructions steer the agent to the right tool and costs", asyn
   const names = new Set((await client.listTools()).tools.map((t) => t.name));
   for (const name of instructions.match(/\b(?:scrape|get)_[a-z_]+/g)) assert.ok(names.has(name), `${name} is a tool`);
 });
+
+test("the Claude Desktop manifest lists exactly the tools of the server", async () => {
+  const { readFileSync } = await import("node:fs");
+  const manifest = JSON.parse(readFileSync(new URL("../manifest.json", import.meta.url), "utf8"));
+  const { client } = await connect({});
+  const { tools } = await client.listTools();
+  assert.deepEqual(manifest.tools.map((t) => t.name).sort(), tools.map((t) => t.name).sort());
+  assert.equal(manifest.user_config.api_key.sensitive, true);
+  assert.deepEqual(manifest.server.mcp_config.env, {
+    SCRAPING_BOT_USERNAME: "${user_config.username}",
+    SCRAPING_BOT_API_KEY: "${user_config.api_key}",
+  });
+});
