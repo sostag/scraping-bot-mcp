@@ -1,0 +1,33 @@
+# DigitalOcean App Platform: remote (HTTP) mode of the MCP server on
+# https://mcp.scraping-bot.io/mcp. Create once with:
+#   doctl apps create --spec .do/app.yaml
+# then set INTERNAL_PROXY_SECRET (same value as the API's) in the app settings.
+# Each release pushes registry.digitalocean.com/scrapresgistry/scraping-bot-mcp:latest
+# (.github/workflows/release.yml), which redeploys the app.
+name: scraping-bot-mcp
+region: fra
+services:
+  - name: mcp
+    image:
+      registry_type: DOCR
+      repository: scraping-bot-mcp
+      tag: latest
+      deploy_on_push:
+        enabled: true
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    health_check:
+      http_path: /health
+    envs:
+      - key: SCRAPING_BOT_API_URL
+        value: https://api.scraping-bot.io
+      # Client IP set by App Platform's proxy (rate limits, forwarded to the API)
+      - key: CLIENT_IP_HEADER
+        value: do-connecting-ip
+      - key: INTERNAL_PROXY_SECRET
+        scope: RUN_TIME
+        type: SECRET
+domains:
+  - domain: mcp.scraping-bot.io
+    type: PRIMARY

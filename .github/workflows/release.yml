@@ -30,6 +30,8 @@ jobs:
   release:
     if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.next.outputs.version }}
     steps:
       - name: Checkout with history and tags
         uses: actions/checkout@v4
@@ -46,6 +48,7 @@ jobs:
       - name: Install, build and test
         run: |
           npm ci
+          npm run secretlint
           npm test
 
       - name: Compute the next version
@@ -93,3 +96,36 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.next.outputs.version }}
         run: gh release create "v$VERSION" "$RUNNER_TEMP/scraping-bot.mcpb" --title "v$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" --verify-tag
+
+  # Remote (HTTP) mode: image of the released version, pushed to the
+  # DigitalOcean registry; the App Platform app (.do/app.yaml) follows the
+  # "latest" tag. A separate job, so that it can be run again on its own.
+  deploy-http:
+    needs: release
+    if: needs.release.outputs.version != ''
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+      IMAGE: registry.digitalocean.com/scrapresgistry/scraping-bot-mcp
+      # a step's "if" cannot read secrets: say whether the token exists
+      HAS_DO_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN != '' }}
+    steps:
+      - name: Checkout the release
+        if: env.HAS_DO_TOKEN == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
+
+      - name: Install doctl
+        if: env.HAS_DO_TOKEN == 'true'
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Build and push the image
+        if: env.HAS_DO_TOKEN == 'true'
+        run: |
+          doctl registry login --expiry-seconds 1200
+          docker build -t "$IMAGE:$VERSION" -t "$IMAGE:latest" .
+          docker push "$IMAGE:$VERSION"
+          docker push "$IMAGE:latest"

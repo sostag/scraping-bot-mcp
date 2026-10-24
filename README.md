@@ -40,7 +40,27 @@ Or add the server to `claude_desktop_config.json` (macOS: `~/Library/Application
 }
 ```
 
-### Cursor and other clients
+### Remote server (Cursor and other clients that connect to a URL)
+
+Nothing to install: point the client to `https://mcp.scraping-bot.io/mcp` with your credentials in two headers. Cursor (`~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "scraping-bot": {
+      "url": "https://mcp.scraping-bot.io/mcp",
+      "headers": {
+        "X-ScrapingBot-Username": "your_username",
+        "X-ScrapingBot-Api-Key": "your_api_key"
+      }
+    }
+  }
+}
+```
+
+Basic Auth (`Authorization: Basic base64(username:apiKey)`) works too. The server keeps nothing between requests and never logs your key.
+
+### Cursor and other clients (local)
 
 Use the same `command`, `args` and `env` in the client's MCP settings (Cursor: `~/.cursor/mcp.json`).
 
@@ -82,6 +102,10 @@ SCRAPING_BOT_USERNAME=... SCRAPING_BOT_API_KEY=... npm run test:live   # real AP
 ```
 
 `src/` is TypeScript, compiled to `dist/` (not committed): the npm package ships it, and `npx github:...` builds it on install through the `prepare` script.
+
+The remote mode is `src/http.ts` (Express, Streamable HTTP without sessions: credentials on every request, one API client and MCP server per request, per-IP rate limit, 64 KB bodies, no credentials in the logs), started by `src/http-server.ts` (`npm run start:http`, port 8080). The `Dockerfile` builds it; each release pushes the image to the DigitalOcean registry and the App Platform app (`.do/app.yaml`, `mcp.scraping-bot.io`) redeploys it.
+
+The repository is public: `secretlint` checks the staged files before each commit (`scripts/secretlint-staged.mjs`, installed by `npx simple-git-hooks` once after cloning) and the whole repository in the release workflow (`npm run secretlint`). Secrets go in environment variables, never in the code.
 
 Releases are automatic: every push to `main` that changes the code builds, tests and publishes the npm package, a `vX.Y.Z` tag and a GitHub release with the Claude Desktop extension `scraping-bot.mcpb` (`.github/workflows/release.yml`; npm Trusted Publishing, no npm token). `manifest.json` describes the extension (its version comes from `package.json`); `node scripts/build-mcpb.mjs out.mcpb` builds it locally after `npm run build`. The commit messages choose the version: `feat:` raises the minor version, `fix:` and the others the patch version, `!` or `BREAKING CHANGE` the major version. Nothing is committed to `main` (its `package.json` keeps `0.0.0-dev`), so there is nothing to pull. Add `[skip release]` to a commit message to push without releasing. `SCRAPING_BOT_API_URL` points the server to another API (local development).
 

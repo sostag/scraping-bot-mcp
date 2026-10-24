@@ -30,16 +30,24 @@ export function createClient({
   apiKey,
   baseUrl = DEFAULT_API_BASE,
   fetchImpl = fetch,
+  userAgent = `scraping-bot-mcp/${VERSION}`,
+  extraHeaders = {},
 }: {
   username: string;
   apiKey: string;
   baseUrl?: string;
   fetchImpl?: typeof fetch;
+  // The API counts requests whose User-Agent starts with "scraping-bot-mcp/"
+  // as MCP calls
+  userAgent?: string;
+  // Remote mode: the client's IP for the API's per-IP limits
+  extraHeaders?: Record<string, string>;
 }): ApiClient {
   const headers = {
+    ...extraHeaders,
     Authorization: "Basic " + Buffer.from(`${username}:${apiKey}`).toString("base64"),
     Accept: "application/json",
-    "User-Agent": `scraping-bot-mcp/${VERSION}`,
+    "User-Agent": userAgent,
   };
 
   async function send(url: string, init: RequestInit): Promise<ApiResult> {
