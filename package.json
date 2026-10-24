@@ -1,5 +1,5 @@
 {
-  "name": "scraping-bot-mcp",
+  "name": "@sostag/scraping-bot-mcp",
   "version": "0.0.0-dev",
   "description": "MCP server for ScrapingBot: let Claude, Cursor and other AI agents scrape web pages, products, real estate, travel, search engines and social media.",
   "type": "module",
@@ -42,5 +42,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

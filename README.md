@@ -6,7 +6,7 @@ You need a ScrapingBot account: the free plan gives 500 credits a month. Your us
 
 ## Installation
 
-The server runs with `npx` straight from this repository: nothing to install besides Node.js 18 or later (and Git).
+The server runs with `npx` from npm ([`@sostag/scraping-bot-mcp`](https://www.npmjs.com/package/@sostag/scraping-bot-mcp)): nothing to install besides Node.js 18 or later.
 
 ### Claude Code
 
@@ -14,7 +14,7 @@ The server runs with `npx` straight from this repository: nothing to install bes
 claude mcp add scraping-bot \
   -e SCRAPING_BOT_USERNAME=your_username \
   -e SCRAPING_BOT_API_KEY=your_api_key \
-  -- npx -y github:sostag/scraping-bot-mcp
+  -- npx -y @sostag/scraping-bot-mcp
 ```
 
 ### Claude Desktop
@@ -26,7 +26,7 @@ Add the server to `claude_desktop_config.json` (macOS: `~/Library/Application Su
   "mcpServers": {
     "scraping-bot": {
       "command": "npx",
-      "args": ["-y", "github:sostag/scraping-bot-mcp"],
+      "args": ["-y", "@sostag/scraping-bot-mcp"],
       "env": {
         "SCRAPING_BOT_USERNAME": "your_username",
         "SCRAPING_BOT_API_KEY": "your_api_key"
@@ -40,7 +40,7 @@ Add the server to `claude_desktop_config.json` (macOS: `~/Library/Application Su
 
 Use the same `command`, `args` and `env` in the client's MCP settings (Cursor: `~/.cursor/mcp.json`).
 
-To pin a version, add its tag: `github:sostag/scraping-bot-mcp#v1.0.1`. The versions are listed in the [releases](https://github.com/sostag/scraping-bot-mcp/releases).
+To pin a version, add it: `@sostag/scraping-bot-mcp@1.2.0`. The versions are listed on [npm](https://www.npmjs.com/package/@sostag/scraping-bot-mcp?activeTab=versions) and in the [releases](https://github.com/sostag/scraping-bot-mcp/releases). The server also runs straight from this repository, built on install (needs Git): `npx -y github:sostag/scraping-bot-mcp`.
 
 ## Tools
 
@@ -77,9 +77,9 @@ npm test                 # builds, then tests every tool against a fake API (no 
 SCRAPING_BOT_USERNAME=... SCRAPING_BOT_API_KEY=... npm run test:live   # real API, about 65 credits
 ```
 
-`src/` is TypeScript, compiled to `dist/` (not committed): `npx github:...` builds it on install through the `prepare` script.
+`src/` is TypeScript, compiled to `dist/` (not committed): the npm package ships it, and `npx github:...` builds it on install through the `prepare` script.
 
-Releases are automatic: every push to `main` that changes the code builds, tests and publishes a `vX.Y.Z` tag with a GitHub release (`.github/workflows/release.yml`). The commit messages choose the version: `feat:` raises the minor version, `fix:` and the others the patch version, `!` or `BREAKING CHANGE` the major version. Nothing is committed to `main` (its `package.json` keeps `0.0.0-dev`), so there is nothing to pull. Add `[skip release]` to a commit message to push without releasing. `SCRAPING_BOT_API_URL` points the server to another API (local development).
+Releases are automatic: every push to `main` that changes the code builds, tests and publishes a `vX.Y.Z` tag, a GitHub release and the npm package (`.github/workflows/release.yml`, with the `NPM_TOKEN` secret). The commit messages choose the version: `feat:` raises the minor version, `fix:` and the others the patch version, `!` or `BREAKING CHANGE` the major version. Nothing is committed to `main` (its `package.json` keeps `0.0.0-dev`), so there is nothing to pull. Add `[skip release]` to a commit message to push without releasing. `SCRAPING_BOT_API_URL` points the server to another API (local development).
 
 ## License
 

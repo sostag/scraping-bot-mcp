@@ -1,7 +1,7 @@
 name: Release
 
-# Every push to main publishes a version: a vX.Y.Z tag and a GitHub release,
-# chosen from the commit messages (feat -> minor, fix and others -> patch,
+# Every push to main publishes a version: a vX.Y.Z tag, a GitHub release and
+# the npm package @sostag/scraping-bot-mcp, chosen from the commit messages (feat -> minor, fix and others -> patch,
 # "!" or BREAKING CHANGE -> major). Nothing is committed to main: the tag
 # points to a version commit made next to it, so nobody has to pull.
 # Skipped for documentation-only pushes and with [skip release] in the
@@ -19,6 +19,8 @@ on:
 
 permissions:
   contents: write
+  # npm provenance: the package is linked to the commit and workflow that built it
+  id-token: write
 
 concurrency:
   group: release
@@ -28,6 +30,9 @@ jobs:
   release:
     if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
+    env:
+      # a step's "if" cannot read secrets: say whether the npm token exists
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - name: Checkout with history and tags
         uses: actions/checkout@v4
@@ -39,6 +44,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          registry-url: https://registry.npmjs.org
 
       - name: Install, build and test
         run: |
@@ -67,3 +73,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.next.outputs.version }}
         run: gh release create "v$VERSION" --title "v$VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" --verify-tag
+
+      # package.json carries the version set by "Tag the version"; dist/ was
+      # built by npm test. Skipped until the NPM_TOKEN secret exists.
+      - name: Publish to npm
+        if: steps.next.outputs.version != '' && env.HAS_NPM_TOKEN == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --provenance
