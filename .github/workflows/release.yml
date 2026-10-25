@@ -126,6 +126,7 @@ jobs:
         if: env.HAS_DO_TOKEN == 'true'
         run: |
           doctl registry login --expiry-seconds 1200
-          docker build -t "$IMAGE:$VERSION" -t "$IMAGE:latest" .
+          # One plain image (no attestation manifests cluttering the registry)
+          docker build --provenance=false --sbom=false -t "$IMAGE:$VERSION" -t "$IMAGE:latest" .
           docker push "$IMAGE:$VERSION"
           docker push "$IMAGE:latest"
