@@ -6,7 +6,7 @@
 # Each release pushes registry.digitalocean.com/scrapresgistry/scraping-bot-mcp:latest
 # (.github/workflows/release.yml), which redeploys the app.
 name: scraping-bot-mcp
-region: fra
+region: ams
 services:
   - name: mcp
     image:
