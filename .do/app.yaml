@@ -1,7 +1,8 @@
 # DigitalOcean App Platform: remote (HTTP) mode of the MCP server on
 # https://mcp.scraping-bot.io/mcp. Create once with:
 #   doctl apps create --spec .do/app.yaml
-# then set INTERNAL_PROXY_SECRET (same value as the API's) in the app settings.
+# then set INTERNAL_PROXY_SECRET and OAUTH_SECRET (same values as the API's)
+# in the app settings.
 # Each release pushes registry.digitalocean.com/scrapresgistry/scraping-bot-mcp:latest
 # (.github/workflows/release.yml), which redeploys the app.
 name: scraping-bot-mcp
@@ -28,6 +29,14 @@ services:
       - key: INTERNAL_PROXY_SECRET
         scope: RUN_TIME
         type: SECRET
+      # OAuth ("Sign in with ScrapingBot"): same value as the API's OAUTH_SECRET
+      - key: OAUTH_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: PUBLIC_URL
+        value: https://mcp.scraping-bot.io
+      - key: SITE_URL
+        value: https://www.scraping-bot.io
 domains:
   - domain: mcp.scraping-bot.io
     type: PRIMARY

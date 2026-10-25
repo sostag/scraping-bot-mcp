@@ -4,11 +4,14 @@
 // nothing is kept between requests. Nothing secret is logged.
 import { createHash } from "node:crypto";
 import express, { type NextFunction, type Request, type Response } from "express";
-import { rateLimit } from "express-rate-limit";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
+import { mcpAuthRouter, getOAuthProtectedResourceMetadataUrl } from "@modelcontextprotocol/sdk/server/auth/router.js";
+import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createClient, DEFAULT_API_BASE, VERSION } from "./api.js";
 import { registerTools, SERVER_INSTRUCTIONS } from "./tools.js";
+import { apiOAuthStore, OAUTH_SCOPE, ScrapingBotOAuthProvider, type OAuthStore } from "./oauth.js";
 
 export interface HttpOptions {
   apiBase?: string;
@@ -22,6 +25,16 @@ export interface HttpOptions {
   requestsPerMinute?: number;
   maxBodyBytes?: number;
   log?: (line: string) => void;
+  // OAuth ("Sign in with ScrapingBot"), off without a secret: see src/oauth.ts
+  oauth?: {
+    secret: string;
+    // Public URL of this server (issuer), e.g. https://mcp.scraping-bot.io
+    publicUrl: string;
+    // Website with the consent page, e.g. https://www.scraping-bot.io
+    siteUrl: string;
+    // Default: the API's internal OAuth routes
+    store?: OAuthStore;
+  };
 }
 
 const MAX_BODY_BYTES = 64 * 1024;
@@ -61,6 +74,7 @@ export function createHttpApp(options: HttpOptions = {}) {
     requestsPerMinute = REQUESTS_PER_MINUTE,
     maxBodyBytes = MAX_BODY_BYTES,
     log = (line: string) => console.log(line),
+    oauth,
   } = options;
 
   const clientIp = (req: Request): string => {
@@ -70,6 +84,7 @@ export function createHttpApp(options: HttpOptions = {}) {
 
   const app = express();
   app.disable("x-powered-by");
+  const ipKey = (req: Request) => ipKeyGenerator(clientIp(req));
 
   // Access log: no headers, no body, no credentials; the user as a short hash
   app.use((req, res, next) => {
@@ -91,27 +106,65 @@ export function createHttpApp(options: HttpOptions = {}) {
     limit: requestsPerMinute,
     standardHeaders: "draft-8",
     legacyHeaders: false,
-    keyGenerator: (req) => clientIp(req),
+    keyGenerator: ipKey,
     handler: (_req, res) => jsonRpcError(res, 429, "Too many requests: slow down and retry in a minute."),
   });
 
   // inflate: false refuses compressed bodies (MCP clients send plain JSON):
   // no decompression bomb, and body-parser's DoS on compressed bodies
   // (GHSA-27r3-jxmh-p828, fixed in 2.4.0) cannot be reached
-  app.post("/mcp", limiter, express.json({ limit: maxBodyBytes, inflate: false }), async (req, res) => {
-    const credentials = requestCredentials(req);
-    if (!credentials) {
+  // OAuth: metadata, /register, /authorize, /token, /revoke (SDK), each with
+  // its own per-IP limit keyed on the real client IP
+  let bearerAuth: express.RequestHandler | null = null;
+  let resourceMetadataUrl: string | null = null;
+  if (oauth?.secret) {
+    const issuerUrl = new URL(oauth.publicUrl);
+    const resourceServerUrl = new URL("/mcp", issuerUrl);
+    resourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(resourceServerUrl);
+    const provider = new ScrapingBotOAuthProvider(
+      oauth.store ?? apiOAuthStore({ apiBase, secret: oauth.secret, fetchImpl }),
+      { secret: oauth.secret, siteUrl: oauth.siteUrl.replace(/\/$/, ""), issuerUrl: issuerUrl.href },
+    );
+    const limited = { rateLimit: { keyGenerator: ipKey } };
+    app.use(
+      mcpAuthRouter({
+        provider,
+        issuerUrl,
+        resourceServerUrl,
+        scopesSupported: [OAUTH_SCOPE],
+        resourceName: "ScrapingBot",
+        serviceDocumentationUrl: new URL("https://www.scraping-bot.io/mcp-server"),
+        authorizationOptions: limited,
+        tokenOptions: limited,
+        clientRegistrationOptions: limited,
+        revocationOptions: limited,
+      }),
+    );
+    bearerAuth = requireBearerAuth({ verifier: provider, requiredScopes: [OAUTH_SCOPE], resourceMetadataUrl });
+  }
+
+  // OAuth access token: checked by the SDK (401 with WWW-Authenticate when
+  // invalid), then used for the API calls instead of an API key
+  const bearer: express.RequestHandler = (req, res, next) => {
+    if (bearerAuth && /^Bearer\s/i.test(req.get("authorization") ?? "")) return bearerAuth(req, res, next);
+    next();
+  };
+
+  app.post("/mcp", limiter, bearer, express.json({ limit: maxBodyBytes, inflate: false }), async (req, res) => {
+    const accessToken = (req as Request & { auth?: { token: string } }).auth?.token;
+    const credentials = accessToken ? null : requestCredentials(req);
+    if (!accessToken && !credentials) {
       return jsonRpcError(
         res,
         401,
-        "Authentication required: send your ScrapingBot username and API key in the X-ScrapingBot-Username and X-ScrapingBot-Api-Key headers, or with Basic Auth.",
-        { "WWW-Authenticate": REALM },
+        "Authentication required: sign in with ScrapingBot (OAuth), or send your ScrapingBot username and API key in the X-ScrapingBot-Username and X-ScrapingBot-Api-Key headers, or with Basic Auth.",
+        { "WWW-Authenticate": resourceMetadataUrl ? `Bearer resource_metadata="${resourceMetadataUrl}"` : REALM },
       );
     }
 
     const ip = clientIp(req);
     const client = createClient({
-      ...credentials,
+      ...(accessToken ? { accessToken } : credentials!),
       baseUrl: apiBase,
       fetchImpl,
       userAgent: `scraping-bot-mcp/${VERSION} (http)`,

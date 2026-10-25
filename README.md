@@ -40,6 +40,10 @@ Or add the server to `claude_desktop_config.json` (macOS: `~/Library/Application
 }
 ```
 
+### claude.ai and other clients with "Sign in" (OAuth)
+
+Add a custom connector with the URL `https://mcp.scraping-bot.io/mcp`: the client opens ScrapingBot, you sign in and allow it, and it scrapes with your credits without ever seeing your API key. Disconnect it at any time in your account settings ("Connected applications").
+
 ### Remote server (Cursor and other clients that connect to a URL)
 
 Nothing to install: point the client to `https://mcp.scraping-bot.io/mcp` with your credentials in two headers. Cursor (`~/.cursor/mcp.json`):
@@ -103,7 +107,9 @@ SCRAPING_BOT_USERNAME=... SCRAPING_BOT_API_KEY=... npm run test:live   # real AP
 
 `src/` is TypeScript, compiled to `dist/` (not committed): the npm package ships it, and `npx github:...` builds it on install through the `prepare` script.
 
-The remote mode is `src/http.ts` (Express, Streamable HTTP without sessions: credentials on every request, one API client and MCP server per request, per-IP rate limit, 64 KB bodies, no credentials in the logs), started by `src/http-server.ts` (`npm run start:http`, port 8080). The `Dockerfile` builds it; each release pushes the image to the DigitalOcean registry and the App Platform app (`.do/app.yaml`, `mcp.scraping-bot.io`) redeploys it.
+The remote mode is `src/http.ts` (Express, Streamable HTTP without sessions: credentials on every request, one API client and MCP server per request, per-IP rate limit, 64 KB bodies, no credentials in the logs), started by `src/http-server.ts` (`npm run start:http`, port 8080). For local development, `npm run dev:http` runs it on port 8090 against the local API (4000) and website (3000), reloading on changes; copy `.env.example` to `.env` for OAuth. The `Dockerfile` builds it; each release pushes the image to the DigitalOcean registry and the App Platform app (`.do/app.yaml`, `mcp.scraping-bot.io`) redeploys it.
+
+OAuth (`src/oauth.ts`, on when `OAUTH_SECRET` is set): this server is the authorization server (the SDK's routes: metadata, `/register`, `/authorize`, `/token`, `/revoke`, PKCE) but stores nothing. Clients, codes and grants live in the ScrapingBot API (internal routes protected by `OAUTH_SECRET`); `/authorize` sends the user to the website's consent page (`/oauth/consent`) with a signed request. Access tokens (`sbo_at_`, 1 hour) are accepted by the API on `/scrape` and `/account`; refresh tokens (`sbo_rt_`, 90 days) rotate.
 
 The repository is public: `secretlint` checks the staged files before each commit (`scripts/secretlint-staged.mjs`, installed by `npx simple-git-hooks` once after cloning) and the whole repository in the release workflow (`npm run secretlint`). Secrets go in environment variables, never in the code.
 

@@ -28,13 +28,16 @@ export interface ApiClient {
 export function createClient({
   username,
   apiKey,
+  accessToken,
   baseUrl = DEFAULT_API_BASE,
   fetchImpl = fetch,
   userAgent = `scraping-bot-mcp/${VERSION}`,
   extraHeaders = {},
 }: {
-  username: string;
-  apiKey: string;
+  username?: string;
+  apiKey?: string;
+  // OAuth (remote mode): the access token replaces the username and API key
+  accessToken?: string;
   baseUrl?: string;
   fetchImpl?: typeof fetch;
   // The API counts requests whose User-Agent starts with "scraping-bot-mcp/"
@@ -45,7 +48,9 @@ export function createClient({
 }): ApiClient {
   const headers = {
     ...extraHeaders,
-    Authorization: "Basic " + Buffer.from(`${username}:${apiKey}`).toString("base64"),
+    Authorization: accessToken
+      ? `Bearer ${accessToken}`
+      : "Basic " + Buffer.from(`${username}:${apiKey}`).toString("base64"),
     Accept: "application/json",
     "User-Agent": userAgent,
   };

@@ -13,6 +13,7 @@
     "build": "tsc",
     "prepare": "npm run build",
     "dev": "tsx src/index.ts",
+    "dev:http": "PORT=8090 SCRAPING_BOT_API_URL=http://localhost:4000 PUBLIC_URL=http://localhost:8090 SITE_URL=http://localhost:3000 tsx watch --env-file-if-exists=.env src/http-server.ts",
     "start": "node dist/index.js",
     "test": "npm run build && node --test test/*.test.js",
     "test:live": "npm run build && node test/live.js",
@@ -37,6 +38,7 @@
     "@modelcontextprotocol/sdk": "^1.32.1",
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.1",
+    "jose": "^6.2.12",
     "zod": "^3.25.76"
   },
   "devDependencies": {
